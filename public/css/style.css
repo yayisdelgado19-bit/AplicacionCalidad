@@ -1,0 +1,134 @@
+/* Fondo general */
+body{
+    background:#111;
+    color:white;
+    font-family:Arial, sans-serif;
+    margin:0;
+    padding:0;
+}
+
+/* Barra superior */
+.header{
+    background:#b30000;
+    padding:20px 40px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    box-shadow:0 3px 10px rgba(0,0,0,0.4);
+}
+
+.header h1{
+    margin:0;
+    font-size:28px;
+    font-weight:700;
+}
+
+/* Botón login */
+.header .btn{
+    background:white;
+    color:#b30000;
+    padding:10px 20px;
+    border-radius:6px;
+    text-decoration:none;
+    font-weight:bold;
+    transition:0.3s;
+}
+
+.header .btn:hover{
+    background:#ffe6e6;
+}
+
+/* SECCIÓN HERO */
+.hero{
+    text-align:center;
+    padding:100px 20px;
+    background:linear-gradient(180deg, #b30000, #660000);
+    color:white;
+}
+
+.hero h2{
+    font-size:48px;
+    margin-bottom:10px;
+}
+
+.hero p{
+    font-size:20px;
+    opacity:0.9;
+}
+
+/* BOTÓN DEL HERO */
+.hero .btn-main{
+    margin-top:20px;
+    background:white;
+    color:#b30000;
+    padding:12px 25px;
+    border-radius:8px;
+    font-size:18px;
+    text-decoration:none;
+    font-weight:bold;
+    transition:0.3s;
+}
+
+.hero .btn-main:hover{
+    background:#ffe6e6;
+}
+
+/* GALERÍA DE IMÁGENES PEQUEÑAS */
+.gallery{
+    display:flex;
+    justify-content:center;
+    gap:20px;
+    padding:40px 0;
+}
+
+.gallery img{
+    width:180px; 
+    height:120px;
+    object-fit:cover;
+    border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.5);
+    transition:0.3s;
+}
+
+.gallery img:hover{
+    transform:scale(1.05);
+}
+
+/* FORMULARIOS */
+.form-container{
+    max-width:350px;
+    margin:40px auto;
+    background:#222;
+    padding:20px;
+    border-radius:10px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.4);
+}
+
+input,select{
+    width:100%;
+    padding:10px;
+    margin:10px 0;
+    border:none;
+    border-radius:5px;
+}
+
+.btn-red{
+    background:#c00;
+    color:white;
+    padding:10px 20px;
+    border-radius:6px;
+    text-decoration:none;
+}
+
+/* TABLAS */
+table{
+    width:100%;
+    margin-top:20px;
+    border-collapse:collapse;
+}
+
+th,td{
+    border:1px solid #444;
+    padding:10px;
+    text-align:center;
+}

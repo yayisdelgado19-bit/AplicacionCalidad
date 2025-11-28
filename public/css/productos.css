@@ -1,0 +1,79 @@
+/* Fondo general */
+body {
+    background: #111;
+    color: white;
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+/* Contenedor principal */
+.container {
+    max-width: 900px;
+    margin: auto;
+    background: #1a1a1a;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px #0008;
+}
+
+/* Títulos */
+h1, h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Formularios */
+input, select {
+    width: 100%;
+    padding: 10px;
+    margin: 8px 0;
+    border-radius: 6px;
+    border: none;
+    outline: none;
+}
+
+/* BOTONES */
+.btn {
+    display: inline-block;
+    background: #c00;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: 0.2s;
+    font-weight: bold;
+}
+
+.btn:hover {
+    background: #e60000;
+    transform: scale(1.05);
+}
+
+/* Tabla */
+table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+
+th, td {
+    border: 1px solid #444;
+    padding: 10px;
+}
+
+th {
+    background: #222;
+}
+
+td {
+    background: #1a1a1a;
+}
+
+/* Botones en tabla */
+table .btn {
+    padding: 6px 12px;
+    font-size: 14px;
+}
