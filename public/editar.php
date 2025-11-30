@@ -3,25 +3,22 @@ require_once "../../config/db.php";
 
 $id = $_GET['id'];
 
-// --- Consulta segura para traer datos ---
+// 1. Consulta segura con SENTENCIA PREPARADA
 $stmt = $conexion->prepare("SELECT * FROM tipo_producto WHERE id = ?");
 $stmt->bind_param("i", $id);
 $stmt->execute();
 $resultado = $stmt->get_result();
 $fila = $resultado->fetch_assoc();
 
-// --- Actualizar datos ---
-if (isset($_POST['actualizar'])) {
+// 2. Actualizar registro
+if(isset($_POST['actualizar'])) {
+
     $nombre = $_POST['nombre'];
     $descripcion = $_POST['descripcion'];
 
-    $update = $conexion->prepare("
-        UPDATE tipo_producto 
-        SET nombre = ?, descripcion = ?
-        WHERE id = ?
-    ");
-    $update->bind_param("ssi", $nombre, $descripcion, $id);
-    $update->execute();
+    $stmt2 = $conexion->prepare("UPDATE tipo_producto SET nombre = ?, descripcion = ? WHERE id = ?");
+    $stmt2->bind_param("ssi", $nombre, $descripcion, $id);
+    $stmt2->execute();
 
     header("Location: index.php");
     exit();
@@ -37,7 +34,6 @@ if (isset($_POST['actualizar'])) {
 <body>
 <div class="container">
     <h1>Editar Tipo de Producto</h1>
-
     <form method="POST">
         <label>Nombre:</label>
         <input type="text" name="nombre" value="<?= $fila['nombre'] ?>" required>
