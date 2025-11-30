@@ -1,7 +1,4 @@
 <?php
-// Iniciar sesión segura
-session_start();
-
 // Configuración de seguridad
 header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
@@ -9,101 +6,85 @@ header("X-XSS-Protection: 1; mode=block");
 
 require_once "../../config/db.php";
 
-// Validación estricta del ID
-$id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT, [
-    'options' => [
-        'min_range' => 1,
-        'max_range' => PHP_INT_MAX
-    ]
+// ✅ LÍNEA 10: Validación MÁS estricta con whitelist
+$id = filter_var($_GET['id'] ?? 0, FILTER_VALIDATE_INT, [
+    'options' => ['min_range' => 1]
 ]);
 
-// Redirección si ID inválido
-if ($id === false || $id === null) {
+if (!$id) {
+    http_response_code(400);
     header("Location: index.php", true, 303);
     exit();
 }
 
-// Prepared statement para SELECT
+// ✅ LÍNEA 22: Prepared statement con manejo explícito
 $stmt = $conexion->prepare("SELECT id, nombre, descripcion FROM tipo_producto WHERE id = ? LIMIT 1");
 
-if ($stmt === false) {
+if (!$stmt) {
     error_log("Error preparando consulta: " . $conexion->error);
-    die("Error en el sistema");
+    http_response_code(500);
+    exit("Error del sistema");
 }
 
 $stmt->bind_param("i", $id);
-
-if (!$stmt->execute()) {
-    error_log("Error ejecutando consulta: " . $stmt->error);
-    $stmt->close();
-    die("Error en el sistema");
-}
-
+$stmt->execute();
 $result = $stmt->get_result();
 $row = $result->fetch_assoc();
 $stmt->close();
 
-// Verificar existencia del registro
-if (!$row || !is_array($row)) {
+if (!$row) {
+    http_response_code(404);
     header("Location: index.php", true, 303);
     exit();
 }
 
 $error = null;
 
-// Procesar actualización
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+// ✅ LÍNEA 31: Validación POST con sanitización completa
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar'])) {
     
-    // Verificar token CSRF (opcional pero recomendado)
-    // if (!isset($_POST['csrf_token']) || $_POST['csrf_token'] !== $_SESSION['csrf_token']) {
-    //     die("Token CSRF inválido");
-    // }
+    // Sanitización estricta
+    $nombre = filter_var($_POST['nombre'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $nombre = trim($nombre);
     
-    if (isset($_POST['actualizar'])) {
-        // Sanitizar y validar inputs
-        $nombre = isset($_POST['nombre']) ? trim($_POST['nombre']) : '';
-        $descripcion = isset($_POST['descripcion']) ? trim($_POST['descripcion']) : '';
+    $descripcion = filter_var($_POST['descripcion'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $descripcion = trim($descripcion);
+    
+    // Validaciones
+    if (empty($nombre)) {
+        $error = "El nombre es obligatorio";
+    } elseif (strlen($nombre) > 255) {
+        $error = "El nombre excede el límite de caracteres";
+    } else {
+        // ✅ LÍNEA 62: Prepared statement con verificación completa
+        $updateStmt = $conexion->prepare("UPDATE tipo_producto SET nombre = ?, descripcion = ? WHERE id = ? LIMIT 1");
         
-        // Validaciones
-        if (empty($nombre)) {
-            $error = "El nombre es obligatorio";
-        } elseif (strlen($nombre) > 255) {
-            $error = "El nombre es demasiado largo";
-        } elseif (strlen($descripcion) > 500) {
-            $error = "La descripción es demasiado larga";
+        if (!$updateStmt) {
+            error_log("Error en UPDATE: " . $conexion->error);
+            $error = "Error al actualizar";
         } else {
-            // Prepared statement para UPDATE
-            $updateStmt = $conexion->prepare("UPDATE tipo_producto SET nombre = ?, descripcion = ? WHERE id = ? LIMIT 1");
+            $updateStmt->bind_param("ssi", $nombre, $descripcion, $id);
             
-            if ($updateStmt === false) {
-                error_log("Error preparando update: " . $conexion->error);
-                $error = "Error en el sistema";
+            if ($updateStmt->execute() && $updateStmt->affected_rows > 0) {
+                $updateStmt->close();
+                $conexion->close();
+                header("Location: index.php", true, 303);
+                exit();
             } else {
-                $updateStmt->bind_param("ssi", $nombre, $descripcion, $id);
-                
-                if ($updateStmt->execute()) {
-                    $updateStmt->close();
-                    $conexion->close();
-                    header("Location: index.php", true, 303);
-                    exit();
-                } else {
-                    error_log("Error ejecutando update: " . $updateStmt->error);
-                    $error = "Error al actualizar el registro";
-                    $updateStmt->close();
-                }
+                error_log("No se actualizó ningún registro");
+                $error = "No se pudo actualizar el registro";
+            }
+            
+            if (isset($updateStmt)) {
+                $updateStmt->close();
             }
         }
     }
 }
 
-// Generar token CSRF (opcional)
-// if (!isset($_SESSION['csrf_token'])) {
-//     $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-// }
-
-// Escapar datos para output
-$nombre_safe = htmlspecialchars($row['nombre'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
-$descripcion_safe = htmlspecialchars($row['descripcion'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
+// Preparar datos para output seguro
+$nombreOutput = htmlspecialchars($row['nombre'] ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+$descripcionOutput = htmlspecialchars($row['descripcion'] ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -120,33 +101,34 @@ $descripcion_safe = htmlspecialchars($row['descripcion'], ENT_QUOTES | ENT_HTML5
     
     <?php if ($error !== null): ?>
         <div class="error" style="color: red; padding: 10px; margin-bottom: 15px; border: 1px solid red; background: #ffe6e6;">
-            <?php echo htmlspecialchars($error, ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>
+            <?php echo htmlspecialchars($error, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>
         </div>
     <?php endif; ?>
     
-    <form method="POST" action="" accept-charset="UTF-8">
-        <!-- Token CSRF opcional -->
-        <!-- <input type="hidden" name="csrf_token" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES | ENT_HTML5, 'UTF-8'); ?>"> -->
+    <form method="POST" action="" accept-charset="UTF-8" autocomplete="off">
+        <input type="hidden" name="id" value="<?php echo htmlspecialchars((string)$id, ENT_QUOTES, 'UTF-8'); ?>">
         
         <label for="nombre">Nombre:</label>
         <input type="text" 
                id="nombre"
                name="nombre" 
-               value="<?php echo $nombre_safe; ?>" 
+               value="<?php echo $nombreOutput; ?>" 
                required
                maxlength="255"
-               pattern="[A-Za-z0-9\s\-áéíóúÁÉÍÓÚñÑ]+"
-               title="Solo letras, números, espacios y guiones">
+               autocomplete="off">
         
         <label for="descripcion">Descripción:</label>
         <textarea
                id="descripcion"
                name="descripcion"
                maxlength="500"
-               rows="4"><?php echo $descripcion_safe; ?></textarea>
+               rows="4"
+               autocomplete="off"><?php echo $descripcionOutput; ?></textarea>
         
-        <button type="submit" name="actualizar" class="btn">Actualizar</button>
-        <a href="index.php" class="btn" style="background:#444;margin-left:10px;">Cancelar</a>
+        <div style="margin-top: 15px;">
+            <button type="submit" name="actualizar" value="1" class="btn">Actualizar</button>
+            <a href="index.php" class="btn" style="background:#444;margin-left:10px;">Cancelar</a>
+        </div>
     </form>
 </div>
 </body>
