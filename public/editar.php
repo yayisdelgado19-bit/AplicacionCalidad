@@ -4,14 +4,28 @@ header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
 
-require_once "../../config/db.php";
+// ✅ LÍNEA 7: Path seguro con validación
+$configPath = realpath(__DIR__ . "/../../config/db.php");
+if ($configPath === false || !file_exists($configPath)) {
+    http_response_code(500);
+    exit("Error de configuración");
+}
+require_once $configPath;
 
-// ✅ LÍNEA 10: Validación MÁS estricta con whitelist
-$id = filter_var($_GET['id'] ?? 0, FILTER_VALIDATE_INT, [
-    'options' => ['min_range' => 1]
+// ✅ LÍNEA 16: Validación estricta con tipo verificado
+$id_raw = $_GET['id'] ?? null;
+
+if ($id_raw === null || $id_raw === '') {
+    http_response_code(400);
+    header("Location: index.php", true, 303);
+    exit();
+}
+
+$id = filter_var($id_raw, FILTER_VALIDATE_INT, [
+    'options' => ['min_range' => 1, 'max_range' => 2147483647]
 ]);
 
-if (!$id) {
+if ($id === false || $id === null) {
     http_response_code(400);
     header("Location: index.php", true, 303);
     exit();
