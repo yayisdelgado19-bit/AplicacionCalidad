@@ -1,53 +1,47 @@
 <?php
 require_once "../../config/db.php";
 
-// Validación y sanitización del ID
+// ✅ Validación segura del ID
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
-// Si el ID no es válido, redirigir
 if ($id === false || $id === null || $id <= 0) {
     header("Location: index.php");
     exit();
 }
 
-// Consulta segura
-$stmt = $conexion->prepare("SELECT * FROM tipo_producto WHERE id = ?");
+// ✅ Prepared statement para SELECT
+$query = "SELECT * FROM tipo_producto WHERE id = ?";
+$stmt = $conexion->prepare($query);
+
 if (!$stmt) {
-    die("Error en la preparación de la consulta: " . $conexion->error);
+    die("Error en la preparación de la consulta");
 }
 
 $stmt->bind_param("i", $id);
 $stmt->execute();
-$resultado = $stmt->get_result();
-$fila = $resultado->fetch_assoc();
+$result = $stmt->get_result();
+$row = $result->fetch_assoc();
 
-// Verificar que existe el registro
-if (!$fila) {
+if (!$row) {
     header("Location: index.php");
     exit();
 }
 
 $stmt->close();
 
-// Procesar actualización
+// ✅ Procesar actualización de forma segura
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar'])) {
-    // Validar y sanitizar inputs
     $nombre = trim($_POST['nombre'] ?? '');
     $descripcion = trim($_POST['descripcion'] ?? '');
     
-    // Validaciones
     if (empty($nombre)) {
         $error = "El nombre es obligatorio";
     } else {
-        // Update seguro
-        $update = $conexion->prepare("
-            UPDATE tipo_producto 
-            SET nombre = ?, descripcion = ?
-            WHERE id = ?
-        ");
+        // ✅ Prepared statement para UPDATE
+        $update = $conexion->prepare("UPDATE tipo_producto SET nombre = ?, descripcion = ? WHERE id = ?");
         
         if (!$update) {
-            die("Error en la preparación del update: " . $conexion->error);
+            die("Error en la preparación del update");
         }
         
         $update->bind_param("ssi", $nombre, $descripcion, $id);
@@ -58,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar'])) {
             header("Location: index.php");
             exit();
         } else {
-            $error = "Error al actualizar: " . $update->error;
+            $error = "Error al actualizar";
             $update->close();
         }
     }
@@ -86,14 +80,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar'])) {
         <label>Nombre:</label>
         <input type="text" 
                name="nombre" 
-               value="<?= htmlspecialchars($fila['nombre'], ENT_QUOTES, 'UTF-8') ?>" 
+               value="<?= htmlspecialchars($row['nombre'], ENT_QUOTES, 'UTF-8') ?>" 
                required
                maxlength="255">
         
         <label>Descripción:</label>
         <input type="text" 
                name="descripcion" 
-               value="<?= htmlspecialchars($fila['descripcion'], ENT_QUOTES, 'UTF-8') ?>"
+               value="<?= htmlspecialchars($row['descripcion'], ENT_QUOTES, 'UTF-8') ?>"
                maxlength="500">
         
         <button type="submit" name="actualizar" class="btn">Actualizar</button>
@@ -101,4 +95,5 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar'])) {
     </form>
 </div>
 </body>
+</html>
 </html>
