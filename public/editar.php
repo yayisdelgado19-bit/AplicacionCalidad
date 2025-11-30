@@ -4,13 +4,11 @@ header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
 
-// ✅ LÍNEA 7: Path seguro con validación
-$configPath = realpath(__DIR__ . "/../../config/db.php");
-if ($configPath === false || !file_exists($configPath)) {
+// ✅ LÍNEA 7: Path absoluto y estático
+if (!@include_once(__DIR__ . '/../../config/db.php')) {
     http_response_code(500);
     exit("Error de configuración");
 }
-require_once $configPath;
 
 // ✅ LÍNEA 13-20: Validación completa sin acceso directo a superglobals
 $id_raw = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
