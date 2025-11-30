@@ -12,20 +12,23 @@ if ($configPath === false || !file_exists($configPath)) {
 }
 require_once $configPath;
 
-// ✅ LÍNEA 16: Validación estricta con tipo verificado
-$id_raw = $_GET['id'] ?? null;
+// ✅ LÍNEA 13-20: Validación completa sin acceso directo a superglobals
+$id_raw = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
 
-if ($id_raw === null || $id_raw === '') {
+if ($id_raw === null || $id_raw === false || $id_raw === '') {
     http_response_code(400);
     header("Location: index.php", true, 303);
     exit();
 }
 
 $id = filter_var($id_raw, FILTER_VALIDATE_INT, [
-    'options' => ['min_range' => 1, 'max_range' => 2147483647]
+    'options' => [
+        'min_range' => 1,
+        'max_range' => 2147483647
+    ]
 ]);
 
-if ($id === false || $id === null) {
+if ($id === false || $id === null || $id < 1) {
     http_response_code(400);
     header("Location: index.php", true, 303);
     exit();
