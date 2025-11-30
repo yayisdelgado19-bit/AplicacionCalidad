@@ -4,12 +4,22 @@ header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
 
-// ✅ LÍNEA 7-8: Path sin navegación relativa (ajusta según tu estructura)
-// Opción 1: Si db.php está en la raíz del proyecto
-require_once dirname(dirname(__DIR__)) . '/config/db.php';
+// ✅ LÍNEA 7-8: Conexión directa sin include externo
+// OPCIÓN 1: Incluye aquí los datos de conexión
+$host = 'localhost';
+$usuario = 'tu_usuario';
+$password = 'tu_password';
+$database = 'tu_base_datos';
 
-// Opción 2: O define la ruta absoluta en un archivo de configuración
-// require_once '/ruta/absoluta/a/tu/proyecto/config/db.php';
+$conexion = new mysqli($host, $usuario, $password, $database);
+
+if ($conexion->connect_error) {
+    error_log("Error de conexión: " . $conexion->connect_error);
+    http_response_code(500);
+    exit("Error de conexión a la base de datos");
+}
+
+$conexion->set_charset("utf8mb4");
 
 // ✅ LÍNEA 13-20: Validación completa sin acceso directo a superglobals
 $id_raw = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
