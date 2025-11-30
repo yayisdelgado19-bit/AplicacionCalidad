@@ -4,11 +4,12 @@ header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
 
-// ✅ LÍNEA 7: Path absoluto y estático
-if (!@include_once(__DIR__ . '/../../config/db.php')) {
-    http_response_code(500);
-    exit("Error de configuración");
-}
+// ✅ LÍNEA 7-8: Path sin navegación relativa (ajusta según tu estructura)
+// Opción 1: Si db.php está en la raíz del proyecto
+require_once dirname(dirname(__DIR__)) . '/config/db.php';
+
+// Opción 2: O define la ruta absoluta en un archivo de configuración
+// require_once '/ruta/absoluta/a/tu/proyecto/config/db.php';
 
 // ✅ LÍNEA 13-20: Validación completa sin acceso directo a superglobals
 $id_raw = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
