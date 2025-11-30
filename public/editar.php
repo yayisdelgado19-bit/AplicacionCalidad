@@ -1,28 +1,25 @@
 <?php
 require_once "../../config/db.php";
 
-// Validar ID seguro
-$id = intval($_GET['id']);
+$id = $_GET['id'];
 
-// Consulta segura
-$stmt = $conexion->prepare("SELECT * FROM tipo_producto WHERE id = ?");
-$stmt->bind_param("i", $id);
-$stmt->execute();
-$resultado = $stmt->get_result();
-$fila = $resultado->fetch_assoc();
+// Consulta correcta
+$consulta = "SELECT * FROM tipo_producto WHERE id = $id";
+$resultado = mysqli_query($conexion, $consulta);
+$fila = mysqli_fetch_assoc($resultado);
 
 if (isset($_POST['actualizar'])) {
-
     $nombre = $_POST['nombre'];
     $descripcion = $_POST['descripcion'];
 
-    // Update seguro
-    $update = $conexion->prepare("UPDATE tipo_producto SET nombre=?, descripcion=? WHERE id=?");
-    $update->bind_param("ssi", $nombre, $descripcion, $id);
-    $update->execute();
+    // Update correcto
+    $update = "UPDATE tipo_producto 
+               SET nombre='$nombre', descripcion='$descripcion' 
+               WHERE id = $id";
+    mysqli_query($conexion, $update);
 
     header("Location: index.php");
-    exit();
+    exit;
 }
 ?>
 <!DOCTYPE html>
@@ -37,10 +34,10 @@ if (isset($_POST['actualizar'])) {
     <h1>Editar Tipo de Producto</h1>
     <form method="POST">
         <label>Nombre:</label>
-        <input type="text" name="nombre" value="<?=$fila['nombre']?>" required>
+        <input type="text" name="nombre" value="<?= $fila['nombre'] ?>" required>
 
         <label>Descripción:</label>
-        <input type="text" name="descripcion" value="<?=$fila['descripcion']?>">
+        <input type="text" name="descripcion" value="<?= $fila['descripcion'] ?>">
 
         <button type="submit" name="actualizar" class="btn">Actualizar</button>
         <a href="index.php" class="btn" style="background:#444; margin-left:10px;">Cancelar</a>
