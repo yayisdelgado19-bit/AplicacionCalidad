@@ -6,7 +6,12 @@ if ($path === false) {
     http_response_code(500);
     exit('Error: No se encontró el archivo de configuración.');
 }
-require_once $path;
+
+require_once $path; // Aquí se carga $conexion (MYSQLi)
+
+// -----------------------------------------------
+// 1. Obtener ID de forma segura
+// -----------------------------------------------
 $id_raw = filter_input(INPUT_GET, 'identificación', FILTER_SANITIZE_NUMBER_INT);
 
 if ($id_raw === null || $id_raw === false || $id_raw === '') {
@@ -14,6 +19,8 @@ if ($id_raw === null || $id_raw === false || $id_raw === '') {
     header("Location: index.php", true, 303);
     exit();
 }
+
+// Validar entero positivo
 $id = filter_var(
     $id_raw,
     FILTER_VALIDATE_INT,
@@ -30,9 +37,15 @@ if ($id === false) {
     header("Location: index.php", true, 303);
     exit();
 }
+
+// -----------------------------------------------
+// 2. ELIMINAR REGISTRO usando MYSQLi PREPARED
+// -----------------------------------------------
 try {
-    $stmt = $pdo->prepare("DELETE FROM tu_tabla WHERE id = ?");
-    $stmt->execute([$id]);
+
+    $stmt = $conexion->prepare("DELETE FROM persona WHERE id = ?");
+    $stmt->bind_param("i", $id);
+    $stmt->execute();
 
     header("Location: index.php?status=ok", true, 303);
     exit();
@@ -41,4 +54,5 @@ try {
     http_response_code(500);
     exit("Error en la base de datos.");
 }
+
 
