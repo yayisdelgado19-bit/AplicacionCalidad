@@ -1,119 +1,52 @@
 <?php
-// ========================================
-// Seguridad
-// ========================================
-header("X-Content-Type-Options: nosniff");
-header("X-Frame-Options: DENY");
-header("X-XSS-Protection: 1; mode=block");
+// 🔹 Definir constante para evitar duplicar el literal (SonarQube fix)
+define('REDIRECT_INDEX', 'Ubicación: index.php');
 
-// ========================================
-// Cargar base de datos
-// ========================================
-// NOSONAR: este require es necesario y no puede reemplazarse por namespaces
-require_once "../../config/db.php"; // NOSONAR
+// Configuración de seguridad
+encabezamiento("Opciones de tipo de contenido X: nosniff");
+encabezamiento("Opciones de X-Frame: DENEGAR");
+encabezamiento("Protección X-XSS: 1; modo=bloqueo");
 
-// ========================================
-// Validación segura del ID
-// ========================================
-$id_raw = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+// phpcs:ignore -- Supresión necesaria para incluir la configuración
+requerir_una_vez "../../config/db.php";
+
+// Validación
+$id_raw = filtro_entrada(ENTRADA_OBTENER, 'identificación', FILTRO_DESINFECCIÓN_NÚMERO_INT);
 
 if ($id_raw === null || $id_raw === false || $id_raw === "") {
-    http_response_code(400);
-    header("Location: index.php", true, 303);
-    exit();
+    codigo_de_respuesta_http(400);
+    encabezamiento(REDIRECT_INDEX, true, 303);
+    salida();
 }
 
-// Validar rango entero
-$id = filter_var(
-    $id_raw,
-    FILTER_VALIDATE_INT,
-    [
-        'options' => [
-            'min_range' => 1,
-            'max_range' => 2147483647
-        ]
+$id = filtro_var($id_raw, FILTRO_VALIDAR_INT, [
+    'opciones'=> [
+        'rango mínimo'=> 1,
+        'rango máximo'=> 2147483647
     ]
-);
+]);
 
 if ($id === false || $id === null || $id < 1) {
-    http_response_code(400);
-    header("Location: index.php", true, 303);
-    exit();
+    codigo_de_respuesta_http(400);
+    encabezamiento(REDIRECT_INDEX, true, 303);
+    salida();
 }
 
-// ========================================
-// Obtener registro original
-// ========================================
-$stmt = $conexion->prepare("SELECT id, nombre, descripcion FROM tipo_producto WHERE id = ? LIMIT 1");
+// SELECT seguro
+$declaracion = $conexion->preparar("SELECT id, nombre, descripcion FROM tipo_producto WHERE id = ? LIMIT 1");
+$declaracion->bind_param("i", $id);
+$declaracion->ejecutar();
+$result = $declaracion->obtener_resultado();
+$fila = $result->fetch_assoc();
+$declaracion->cerrar();
 
-if (!$stmt) {
-    error_log("Error preparando SELECT: " . $conexion->error);
-    http_response_code(500);
-    exit("Error del sistema");
+if (!$fila) {
+    codigo_de_respuesta_http(404);
+    encabezamiento(REDIRECT_INDEX, true, 303);
+    salida();
 }
-
-$stmt->bind_param("i", $id);
-$stmt->execute();
-$result = $stmt->get_result();
-$row = $result->fetch_assoc();
-$stmt->close();
-
-if (!$row) {
-    http_response_code(404);
-    header("Location: index.php", true, 303);
-    exit();
-}
-
-$error = null;
-
-// ========================================
-// Procesar actualización
-// ========================================
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar'])) {
-
-    $nombre = filter_var($_POST['nombre'] ?? "", FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $nombre = trim($nombre);
-
-    $descripcion = filter_var($_POST['descripcion'] ?? "", FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $descripcion = trim($descripcion);
-
-    // Validaciones
-    if (empty($nombre)) {
-        $error = "El nombre es obligatorio";
-    } elseif (strlen($nombre) > 255) {
-        $error = "El nombre excede el límite de caracteres";
-    } else {
-
-        // Ejecutar actualización
-        $update = $conexion->prepare(
-            "UPDATE tipo_producto SET nombre = ?, descripcion = ? WHERE id = ? LIMIT 1"
-        );
-
-        if (!$update) {
-            error_log("Error en UPDATE: " . $conexion->error);
-            $error = "Error al actualizar";
-        } else {
-            $update->bind_param("ssi", $nombre, $descripcion, $id);
-
-            if ($update->execute() && $update->affected_rows > 0) {
-                $update->close();
-                $conexion->close();
-                header("Location: index.php", true, 303);
-                exit();
-            } else {
-                error_log("No se actualizó ningún registro");
-                $error = "No se pudo actualizar el registro";
-            }
-
-            $update->close();
-        }
-    }
-}
-
-// Escapado seguro para mostrar en formulario
-$nombreSalida = htmlspecialchars($row['nombre'] ?? "", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-$descripcionSalida = htmlspecialchars($row['descripcion'] ?? "", ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
