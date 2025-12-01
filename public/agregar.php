@@ -26,15 +26,13 @@ if (!isset($_SESSION['login']) || $_SESSION['login'] !== true) {
 // Cargar DB (NO usar namespaces aquí)
 // =======================
 $path = realpath(__DIR__ . '/../config/db.php');
-
 if ($path === false) {
     http_response_code(500);
     exit('Error: No se encontró el archivo de configuración.');
 }
 
 // NOSONAR → require_once es correcto aquí (archivo de configuración, no clases)
-require_once $path;
-
+require_once $path; // NOSONAR
 
 // ====================================
 // Variables de estado
@@ -42,21 +40,17 @@ require_once $path;
 $error = null;
 $success = null;
 
-
 // ====================================
 // Obtener tipos de productos
 // ====================================
 $stmt_tipos = $conexion->prepare("SELECT id, nombre FROM tipos ORDER BY nombre ASC");
-
 if (!$stmt_tipos) {
     error_log("Error preparando consulta tipos: " . $conexion->error);
     http_response_code(500);
     exit("Error del sistema");
 }
-
 $stmt_tipos->execute();
 $tipos = $stmt_tipos->get_result();
-
 
 // ====================================
 // Procesar formulario POST
@@ -85,14 +79,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         // Verificar que el tipo exista
         $verify_stmt = $conexion->prepare("SELECT id FROM tipos WHERE id = ? LIMIT 1");
-
         if (!$verify_stmt) {
             error_log("Error verificando tipo: " . $conexion->error);
             $error = "Error del sistema";
         } else {
-
             $verify_stmt->bind_param("i", $tipo);
             $verify_stmt->execute();
+
             $verify_result = $verify_stmt->get_result();
 
             if ($verify_result->num_rows === 0) {
@@ -144,6 +137,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form method="POST" action="" autocomplete="off">
+
         <label for="nombre">Nombre del producto:</label>
         <input type="text"
                id="nombre"
@@ -156,18 +150,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <label for="tipo">Tipo de producto:</label>
         <select name="tipo" id="tipo" required>
             <option value="">-- Seleccione un tipo --</option>
+
             <?php while ($t = $tipos->fetch_assoc()): ?>
                 <option value="<?= htmlspecialchars($t['id'], ENT_QUOTES, 'UTF-8'); ?>"
                     <?= (isset($tipo) && $tipo == $t['id']) ? 'selected' : ''; ?>>
                     <?= htmlspecialchars($t['nombre'], ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>
                 </option>
             <?php endwhile; ?>
+
         </select>
 
         <div style="margin-top: 15px;">
             <button type="submit" class="btn">Guardar</button>
             <a href="productos.php" class="btn" style="background:#666;margin-left:10px;text-decoration:none;display:inline-block;">Cancelar</a>
         </div>
+
     </form>
 </div>
 </body>
