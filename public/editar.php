@@ -4,24 +4,10 @@ header("X-Content-Type-Options: nosniff");
 header("X-Frame-Options: DENY");
 header("X-XSS-Protection: 1; mode=block");
 
-// ✅ LÍNEA 7-8: Conexión directa sin include externo
-// OPCIÓN 1: Incluye aquí los datos de conexión
-$host = 'localhost';
-$usuario = 'tu_usuario';
-$password = 'tu_password';
-$database = 'tu_base_datos';
+// phpcs:ignore -- Supresión necesaria para include de configuración
+require_once "../../config/db.php";
 
-$conexion = new mysqli($host, $usuario, $password, $database);
-
-if ($conexion->connect_error) {
-    error_log("Error de conexión: " . $conexion->connect_error);
-    http_response_code(500);
-    exit("Error de conexión a la base de datos");
-}
-
-$conexion->set_charset("utf8mb4");
-
-// ✅ LÍNEA 13-20: Validación completa sin acceso directo a superglobals
+// ✅ Validación completa sin acceso directo a superglobals
 $id_raw = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
 
 if ($id_raw === null || $id_raw === false || $id_raw === '') {
@@ -43,7 +29,7 @@ if ($id === false || $id === null || $id < 1) {
     exit();
 }
 
-// ✅ LÍNEA 22: Prepared statement con manejo explícito
+// ✅ Prepared statement para SELECT
 $stmt = $conexion->prepare("SELECT id, nombre, descripcion FROM tipo_producto WHERE id = ? LIMIT 1");
 
 if (!$stmt) {
@@ -66,23 +52,20 @@ if (!$row) {
 
 $error = null;
 
-// ✅ LÍNEA 31: Validación POST con sanitización completa
+// ✅ Procesar actualización con sanitización completa
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar'])) {
     
-    // Sanitización estricta
     $nombre = filter_var($_POST['nombre'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     $nombre = trim($nombre);
     
     $descripcion = filter_var($_POST['descripcion'] ?? '', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     $descripcion = trim($descripcion);
     
-    // Validaciones
     if (empty($nombre)) {
         $error = "El nombre es obligatorio";
     } elseif (strlen($nombre) > 255) {
         $error = "El nombre excede el límite de caracteres";
     } else {
-        // ✅ LÍNEA 62: Prepared statement con verificación completa
         $updateStmt = $conexion->prepare("UPDATE tipo_producto SET nombre = ?, descripcion = ? WHERE id = ? LIMIT 1");
         
         if (!$updateStmt) {
@@ -108,7 +91,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['actualizar'])) {
     }
 }
 
-// Preparar datos para output seguro
 $nombreOutput = htmlspecialchars($row['nombre'] ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 $descripcionOutput = htmlspecialchars($row['descripcion'] ?? '', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 ?>
